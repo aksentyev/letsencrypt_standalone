@@ -18,3 +18,9 @@ config file like this:
 }
 
 ```
+
+choose acme backend
+
+```
+LE_ENVIRONMENT=staging
+```

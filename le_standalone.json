@@ -1,12 +1,13 @@
 {
   "path": "./",
-  "email": "admin@example.com",
+  "email": "g.aksentiev@excursiopedia.com",
+  "account": "de",
   "domains": [
     {
-      "host": "example.com"
+      "host": "planetpass.io"
     },
     {
-      "host": "www.example.com"
+      "host": "planetpass.com"
     }
   ]
 }

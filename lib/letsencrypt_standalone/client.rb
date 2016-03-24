@@ -5,21 +5,23 @@ require 'pry'
 
 module LetsencryptStandalone
   class Client < Base
+    attr_reader :account, :email, :path, :acme_client
 
     def initialize(account: nil, email:, path:)
       @path = path
-      @account = account
       @email = email
-
       @acme_client = Acme::Client.new(private_key: private_key, endpoint: endpoint_url)
+      @account = account
+
       if !account
+        @@logger.warn "Account key not found. Creating..."
+        @account = File.join(path, 'account.pem')
         create(email)
+        save_account_key
         raise 'No email specified' if !email
       end
       private_key
     end
-
-    attr_reader :account, :email, :path, :acme_client
 
     def create(email)
       contact = 'mailto:' + email #https://github.com/schubergphilis/letsencrypt/issues/3
@@ -33,15 +35,17 @@ module LetsencryptStandalone
     private
 
     def private_key
-      @private_key ||= if account && File.exist?(path + account)
-                         OpenSSL::PKey::RSA.new(File.read(path + account))
+      @private_key ||= if account && File.exist?(File.join(path, account))
+                         OpenSSL::PKey::RSA.new(File.read(File.join(path, account)))
                        else
                          OpenSSL::PKey::RSA.new(4096)
                        end
     end
 
-    def save_key
-      File.write(File.join(output_dir, private_key))
+    def save_account_key
+      @@logger.info "Saving account key."
+      FileUtils.mkdir_p path
+      File.new(File.join(account), 'w').write(private_key.to_pem)
     end
   end
 end

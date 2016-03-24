@@ -14,6 +14,7 @@ logger.level = Logger::INFO
 # Config
 config      = LetsencryptStandalone::Config.new
 config.port = 12080
+
 OptionParser.new do |opts|
   opts.banner = "le_standalone [options]"
 
@@ -37,14 +38,22 @@ www_root = 'public'
 
 thr = Thread.new do
   log = WEBrick::Log.new(STDOUT, WEBrick::Log::DEBUG)
-  server = WEBrick::HTTPServer.new :Port => config.port, :DocumentRoot => www_root, :Logger => log, :AccessLog => log
+  server = WEBrick::HTTPServer.new :Port => config.port,
+                                   :DocumentRoot => www_root,
+                                   :Logger => log,
+                                   :AccessLog => log
   server.start
 end
+
+puts config.account
+# Account
+client = LetsencryptStandalone::Client.new  account: config.account,
+                                            email: config.email,
+                                            path: File.join(config.path, LetsencryptStandalone::Base.new.output_dir)
 
 # Let's encrypt!
 config.domains.each do |params|
   domain = LetsencryptStandalone::Domain.new(params)
-  client = LetsencryptStandalone::Client.new(account: config.account, email: config.email, path: config.path)
   if domain.certificates
     certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
     next if !certificate.needs_refresh?
@@ -71,9 +80,9 @@ config.domains.each do |params|
       # verified?
       status = challenge.verify_status
       if status == 'valid'
-        logger.warn("Verified #{domain.host} challenge. Obtaining certificate.")
+        logger.info("Verified #{domain.host} challenge. Obtaining certificate.")
         certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain).obtain_new
-        certificate.save
+        certificate.save(dir: File.join(config.path, LetsencryptStandalone::Base.new.output_dir))
       else
         logger.warn("Could not verify #{domain.host} challenge. Status #{status}")
       end
@@ -91,6 +100,9 @@ config.domains.each do |params|
   logger.info "Finished #{domain.host} tasks"
 end
 
+# Refresh configuration for future use
+config.config[:account] = client.account
 config.write
 
+# Make clean
 FileUtils.rm_rf www_root
