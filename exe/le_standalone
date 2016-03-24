@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+require 'optparse'
+require 'json'
+require 'acme-client'
+require 'fileutils'
+require 'webrick'
+require 'logger'
+require 'letsencrypt_standalone'
+
+# Logger
+logger = Logger.new(STDOUT)
+logger.level = Logger::INFO
+
+# Config
+OptionParser.new do |opts|
+  opts.banner = "le_standalone [options]"
+
+  opts.on("-c", "--config", String, "Path to config file. Default: ./le_standalone.json") do |item|
+    config_file = item
+  end
+
+  opts.on("-e", "--email", String, "Email")
+end.parse!
+config = LetsencryptStandalone::Config.new
+domains_config = config.domains.clone
+
+# Webrick conf
+FileUtils.mkdir_p(File.join(config.path, 'public'))
+root = 'public'
+
+thr = Thread.new do
+  log = WEBrick::Log.new(STDOUT, WEBrick::Log::DEBUG)
+  server = WEBrick::HTTPServer.new :Port => 12080, :DocumentRoot => root, :Logger => log, :AccessLog => log
+  server.start
+end
+
+# Let's encrypt!
+config.domains.each do |params|
+  domain = LetsencryptStandalone::Domain.new(params)
+  client =  LetsencryptStandalone::Client.new(account: config.account, email: config.email, path: config.path)
+  if domain.certificates
+    certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
+    next if !certificate.needs_refresh?
+  end
+
+  logger.info "Starting #{domain.host} tasks"
+
+  authorization = client.authorize(domain: domain.host)
+  #The http-01 method will require you to respond to a HTTP request.
+  challenge = authorization.http01
+
+  # Save the file. We'll create a public directory to serve it from, and inside it we'll create the challenge file.
+  FileUtils.mkdir_p(File.join('public', File.dirname(challenge.filename)))
+
+  # We'll write the content of the file
+  File.write(File.join('public', challenge.filename), challenge.file_content)
+
+  # try to verify
+  challenge.request_verification
+
+  tries = config.tries
+  tries.times do
+    begin
+      # verified?
+      status = challenge.verify_status
+      if status == 'valid'
+        logger.warn("Verified #{domain.host} challenge. Obtaining certificate.")
+        certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain).obtain_new
+        certificate.save
+      else
+        logger.warn("Could not verify #{domain.host} challenge. Status #{status}")
+      end
+      sleep 1
+    rescue Acme::Client::Error::Malformed
+      next
+    end
+  end
+
+  # write cert path to config
+  if certificate
+    config.push_certs(files: certificate.files, domain: domain)
+  end
+
+  logger.info "Finished #{domain.host} tasks"
+end
+
+config.write
