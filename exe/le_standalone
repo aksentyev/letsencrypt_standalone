@@ -12,6 +12,8 @@ logger = Logger.new(STDOUT)
 logger.level = Logger::INFO
 
 # Config
+config      = LetsencryptStandalone::Config.new
+config.port = 12080
 OptionParser.new do |opts|
   opts.banner = "le_standalone [options]"
 
@@ -19,25 +21,30 @@ OptionParser.new do |opts|
     config_file = item
   end
 
-  opts.on("-e", "--email", String, "Email")
+  opts.on("-p", "--port N", Integer, "Port. Default: 12080") do |port|
+    config.port = port if !port.nil?
+  end
+
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit
+  end
 end.parse!
-config = LetsencryptStandalone::Config.new
-domains_config = config.domains.clone
 
 # Webrick conf
 FileUtils.mkdir_p(File.join(config.path, 'public'))
-root = 'public'
+www_root = 'public'
 
 thr = Thread.new do
   log = WEBrick::Log.new(STDOUT, WEBrick::Log::DEBUG)
-  server = WEBrick::HTTPServer.new :Port => 12080, :DocumentRoot => root, :Logger => log, :AccessLog => log
+  server = WEBrick::HTTPServer.new :Port => config.port, :DocumentRoot => www_root, :Logger => log, :AccessLog => log
   server.start
 end
 
 # Let's encrypt!
 config.domains.each do |params|
   domain = LetsencryptStandalone::Domain.new(params)
-  client =  LetsencryptStandalone::Client.new(account: config.account, email: config.email, path: config.path)
+  client = LetsencryptStandalone::Client.new(account: config.account, email: config.email, path: config.path)
   if domain.certificates
     certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
     next if !certificate.needs_refresh?
@@ -85,3 +92,5 @@ config.domains.each do |params|
 end
 
 config.write
+
+FileUtils.rm_rf www_root

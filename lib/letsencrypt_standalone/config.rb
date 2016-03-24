@@ -2,7 +2,7 @@ require 'letsencrypt_standalone'
 
 module LetsencryptStandalone
   class Config < Base
-    attr_accessor :config, :location
+    attr_accessor :config, :location, :port
     def initialize(config_file: nil)
       @location ||= 'le_standalone.json'
       @config = JSON.parse(File.read(@location), :symbolize_names => true)
@@ -24,7 +24,7 @@ module LetsencryptStandalone
 
     def push_certs(files:, domain:)
       config[:domains].map! do |d|
-        d.merge(:certificates => files) if d[:host] == domain.host
+        d[:host] == domain.host ? d.merge(:certificates => files) : d
       end
     end
 
