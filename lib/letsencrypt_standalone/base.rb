@@ -15,10 +15,6 @@ module LetsencryptStandalone
       ENV['LE_ENVIRONMENT'] == 'staging' ? STAGE_URL : PROD_URL
     end
 
-    def client_key_name
-      'account.key' || config[:account]
-    end
-
     def output_dir
       'ssl_certs/'
     end

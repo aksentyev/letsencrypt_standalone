@@ -4,9 +4,6 @@
   "domains": [
     {
       "host": "example.com"
-    },
-    {
-      "host": "www.example.com"
     }
   ]
 }
