@@ -4,22 +4,20 @@ require 'openssl'
 
 module LetsencryptStandalone
   class Client < Base
-    attr_reader :account, :email, :path, :acme_client
+    attr_reader :account, :email, :acme_client
 
-    def initialize(account: nil, email:, path:)
-      @path = path
+    def initialize(account: nil, email:)
       @email = email
-      @acme_client = Acme::Client.new(private_key: private_key, endpoint: endpoint_url)
       @account = account
+      @acme_client = Acme::Client.new(private_key: private_key, endpoint: endpoint_url)
 
       if !account
-        @@logger.warn "Account key not found. Creating..."
+        logger.warn "Account key not found. Creating..."
         @account = 'account.pem'
         create(email)
         save_account_key
         raise 'No email specified' if !email
       end
-      private_key
     end
 
     def create(email)
@@ -42,7 +40,7 @@ module LetsencryptStandalone
     end
 
     def save_account_key
-      @@logger.info "Saving account key."
+      logger.info "Saving account key."
       FileUtils.mkdir_p path
       File.new(File.join(path, account), 'w').write(private_key.to_pem)
     end

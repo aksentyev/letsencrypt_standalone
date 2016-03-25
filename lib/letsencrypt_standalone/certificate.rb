@@ -27,7 +27,7 @@ module LetsencryptStandalone
       return self
     end
 
-    def needs_refresh?(dir: output_dir)
+    def needs_refresh?
       cert = @files[:certificate]
       if cert.not_after > Time.now + 2*24*3600
         logger.warn("It doesnt need to refresh cert for domain: #{@domain}")
@@ -38,13 +38,12 @@ module LetsencryptStandalone
       end
     end
 
-    def save(dir: output_dir)
-
+    def save
       # Save the certificate and the private key to files
       FileUtils.mkdir_p(File.join(output_dir, @domain))
-      File.write(File.join(dir, @domain, @files[:certificate]), @certificate.to_pem)
-      File.write(File.join(dir, @domain, @files[:chain]), @certificate.chain_to_pem)
-      File.write(File.join(dir, @domain, @files[:fullchain]), @certificate.fullchain_to_pem)
+      File.write(File.join(output_dir, @domain, @files[:certificate]), @certificate.to_pem)
+      File.write(File.join(output_dir, @domain, @files[:chain]), @certificate.chain_to_pem)
+      File.write(File.join(output_dir, @domain, @files[:fullchain]), @certificate.fullchain_to_pem)
     end
   end
 end

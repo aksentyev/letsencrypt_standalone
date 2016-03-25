@@ -5,7 +5,7 @@ module LetsencryptStandalone
   class Base
     # Logger
     @@logger = Logger.new(STDOUT)
-    @@logger.level = Logger::WARN
+    @@logger.level = Logger::INFO
 
     def logger
       @@logger
@@ -16,7 +16,15 @@ module LetsencryptStandalone
     end
 
     def output_dir
-      'ssl_certs/'
+      File.join(path, ssl_subdir)
+    end
+
+    def ssl_subdir
+      @ssl_subdir ||= LetsencryptStandalone::Config.new.ssl_subdir
+    end
+
+    def path
+      @path ||= LetsencryptStandalone::Config.new.config[:path]
     end
   end
 end

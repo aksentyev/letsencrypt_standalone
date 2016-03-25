@@ -33,27 +33,25 @@ OptionParser.new do |opts|
 end.parse!
 
 # Webrick conf
-FileUtils.mkdir_p(File.join(config.path, 'public'))
-www_root = 'public'
+www_root = File.join(config.path, 'public')
+FileUtils.mkdir_p(www_root)
 
-thr = Thread.new do
+Thread.new do
   log = WEBrick::Log.new(STDOUT, WEBrick::Log::DEBUG)
   server = WEBrick::HTTPServer.new :Port => config.port,
                                    :DocumentRoot => www_root,
-                                   :Logger => log,
-                                   :AccessLog => log
+                                   :Logger => log
   server.start
 end
 
 # Account
 client = LetsencryptStandalone::Client.new  account: config.account,
-                                            email: config.email,
-                                            path: File.join(config.path, LetsencryptStandalone::Base.new.output_dir)
+                                            email: config.email
 
 # Let's encrypt!
 config.domains.each do |params|
   domain = LetsencryptStandalone::Domain.new(params: params)
-  config.push_private_key_location(domain: domain)
+  config.push_private_key_name(domain: domain)
 
   if domain.certificates
     certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
@@ -67,10 +65,10 @@ config.domains.each do |params|
   challenge = authorization.http01
 
   # Save the file. We'll create a public directory to serve it from, and inside it we'll create the challenge file.
-  FileUtils.mkdir_p(File.join('public', File.dirname(challenge.filename)))
+  FileUtils.mkdir_p(File.join(www_root, File.dirname(challenge.filename)))
 
   # We'll write the content of the file
-  File.write(File.join('public', challenge.filename), challenge.file_content)
+  File.write(File.join(www_root, challenge.filename), challenge.file_content)
 
   # try to verify
   challenge.request_verification
@@ -85,7 +83,8 @@ config.domains.each do |params|
         certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
                           .obtain_new
 
-        certificate.save(dir: File.join(config.path, LetsencryptStandalone::Base.new.output_dir))
+        certificate.save
+        break
       else
         logger.warn("Could not verify #{domain.host} challenge. Status #{status}")
       end

@@ -5,14 +5,14 @@ require 'fileutils'
 module LetsencryptStandalone
   class Domain < Base
     attr_accessor :host, :private_key, :certificates
-    attr_reader :private_key_name
+    attr_reader :private_key_name, :private_key_path
 
     @@default_private_key_name = 'private_key.pem'
 
     def initialize(params:, path: './')
       @host = params.fetch(:host)
       @private_key_name = params.fetch(:private_key, @@default_private_key_name)
-      default_path(path: path)
+      @private_key_path = File.join(output_dir,@host, @private_key_name)
 
       if params.has_key? :certificates
         load_certs(params)
@@ -20,38 +20,38 @@ module LetsencryptStandalone
       load_private_key
     end
 
-    def private_key_location
-      @private_key_location ||= File.join(default_path, @private_key_name)
+    def host_dir
+      @host_dir ||= File.join(output_dir, host)
     end
 
     private
 
     def load_private_key
       logger.info "Trying to use existing private key for #{@host}"
-      if File.exists? File.join(default_path, @private_key_name)
-        @private_key = OpenSSL::PKey::RSA.new(File.read(File.join(default_path, @private_key_name)))
+      if File.exists? File.join(host_dir, @private_key_name)
+        @private_key = OpenSSL::PKey::RSA.new(File.read(@private_key_path))
       else
         @private_key = generate_key
         save_private_key
       end
     end
 
+    def create_host_dir
+      FileUtils.mkdir_p(host_dir)
+    end
+
     def save_private_key
-      FileUtils.mkdir_p(default_path)
-      File.new(private_key_location, 'w').write(@private_key.to_pem)
+      create_host_dir
+      File.new(@private_key_path, 'w').write(@private_key.to_pem)
     end
 
     def load_certs(params)
       @certificates = {}
       params[:certificates].each do |type, file|
-        cert = OpenSSL::X509::Certificate.new(File.read(File.join(default_path, file)))
+        cert = OpenSSL::X509::Certificate.new(File.read(File.join(host_dir, file)))
         @certificates[type] = cert
         logger.info "Trying to use existing cert #{type} for #{@host}"
       end
-    end
-
-    def default_path(path: nil)
-      @default_path ||= File.join(path, output_dir, host)
     end
 
     def generate_key
