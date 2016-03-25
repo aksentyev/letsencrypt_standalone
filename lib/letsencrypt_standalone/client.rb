@@ -12,7 +12,7 @@ module LetsencryptStandalone
       @acme_client = Acme::Client.new(private_key: private_key, endpoint: endpoint_url)
 
       if !account
-        logger.warn "Account key not found. Creating..."
+        logger.info "Account key not found. Creating..."
         @account = 'account.pem'
         create(email)
         save_account_key

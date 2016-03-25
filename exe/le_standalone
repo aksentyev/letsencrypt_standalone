@@ -74,19 +74,20 @@ config.domains.each do |params|
   challenge.request_verification
 
   tries = config.tries
-  tries.times do
+  tries.times do |n|
     begin
       # verified?
       status = challenge.verify_status
       if status == 'valid'
-        logger.info("Verified #{domain.host} challenge. Obtaining certificate.")
+        logger.info "Verified #{domain.host} challenge. Obtaining certificate."
         certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
                           .obtain_new
 
         certificate.save
         break
       else
-        logger.warn("Could not verify #{domain.host} challenge. Status #{status}")
+        logger.info "Could not verify #{domain.host} challenge. Status #{status}"
+        logger.warn "FAIL: Certificate for #{domain.host} has not been obtained during #{tries} tries." if n == tries
       end
       sleep 1
     rescue Acme::Client::Error::Malformed
@@ -97,6 +98,7 @@ config.domains.each do |params|
   # write cert path to config
   if certificate
     config.push_certs_locations(files: certificate.files, domain: domain)
+    logger.info "SUCCESS: Certificate for #{domain.host} was obtained"
   end
 
   logger.info "Finished #{domain.host} tasks"

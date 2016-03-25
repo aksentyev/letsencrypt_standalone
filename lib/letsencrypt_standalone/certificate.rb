@@ -30,10 +30,10 @@ module LetsencryptStandalone
     def needs_refresh?
       cert = @files[:certificate]
       if cert.not_after > Time.now + 2*24*3600
-        logger.warn("It doesnt need to refresh cert for domain: #{@domain}")
+        logger.info("It doesnt need to refresh cert for domain: #{@domain}")
         false
       else
-        logger.warn("It needs to refresh cert for domain: #{@domain}")
+        logger.info("It needs to refresh cert for domain: #{@domain}")
         true
       end
     end
