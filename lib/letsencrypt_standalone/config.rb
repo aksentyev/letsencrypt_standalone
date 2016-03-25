@@ -9,7 +9,7 @@ module LetsencryptStandalone
     end
 
     def output_dir
-      config.output_dir || super #TODO TBD
+      config.output_dir || super
     end
 
     %i(account domains email path).each do |meth|
@@ -22,9 +22,15 @@ module LetsencryptStandalone
       config.fetch(:tries, 5)
     end
 
-    def push_certs(files:, domain:)
+    def push_certs_locations(files:, domain:)
       config[:domains].map! do |d|
-        d[:host] == domain.host ? d.merge(:certificates => files) : d
+        d[:host] == domain.host ? d.merge(files) : d
+      end
+    end
+
+    def push_private_key_location(domain:)
+      config[:domains].map! do |d|
+        d[:host] == domain.host ? d.merge(private_key: domain.private_key_name) : d
       end
     end
 

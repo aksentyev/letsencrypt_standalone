@@ -45,7 +45,6 @@ thr = Thread.new do
   server.start
 end
 
-puts config.account
 # Account
 client = LetsencryptStandalone::Client.new  account: config.account,
                                             email: config.email,
@@ -53,7 +52,9 @@ client = LetsencryptStandalone::Client.new  account: config.account,
 
 # Let's encrypt!
 config.domains.each do |params|
-  domain = LetsencryptStandalone::Domain.new(params)
+  domain = LetsencryptStandalone::Domain.new(params: params)
+  config.push_private_key_location(domain: domain)
+
   if domain.certificates
     certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
     next if !certificate.needs_refresh?
@@ -81,7 +82,9 @@ config.domains.each do |params|
       status = challenge.verify_status
       if status == 'valid'
         logger.info("Verified #{domain.host} challenge. Obtaining certificate.")
-        certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain).obtain_new
+        certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
+                          .obtain_new
+
         certificate.save(dir: File.join(config.path, LetsencryptStandalone::Base.new.output_dir))
       else
         logger.warn("Could not verify #{domain.host} challenge. Status #{status}")
@@ -94,7 +97,7 @@ config.domains.each do |params|
 
   # write cert path to config
   if certificate
-    config.push_certs(files: certificate.files, domain: domain)
+    config.push_certs_locations(files: certificate.files, domain: domain)
   end
 
   logger.info "Finished #{domain.host} tasks"

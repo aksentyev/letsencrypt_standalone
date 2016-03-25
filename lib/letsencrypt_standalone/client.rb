@@ -1,7 +1,6 @@
 require 'letsencrypt_standalone'
 require 'acme/client'
 require 'openssl'
-require 'pry'
 
 module LetsencryptStandalone
   class Client < Base
@@ -15,7 +14,7 @@ module LetsencryptStandalone
 
       if !account
         @@logger.warn "Account key not found. Creating..."
-        @account = File.join(path, 'account.pem')
+        @account = 'account.pem'
         create(email)
         save_account_key
         raise 'No email specified' if !email
@@ -45,7 +44,7 @@ module LetsencryptStandalone
     def save_account_key
       @@logger.info "Saving account key."
       FileUtils.mkdir_p path
-      File.new(File.join(account), 'w').write(private_key.to_pem)
+      File.new(File.join(path, account), 'w').write(private_key.to_pem)
     end
   end
 end
