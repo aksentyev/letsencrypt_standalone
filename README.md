@@ -9,6 +9,7 @@ config file like this:
 ```
 {
   "path": "./",
+  "ssl_dir": "ssl_certs", //relative to "path"
   "email": "admin@example.com",
   "domains": [
     {
