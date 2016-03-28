@@ -37,13 +37,12 @@ OptionParser.new do |opts|
 end.parse!
 
 # Webrick conf
-www_root = config.www_root
-FileUtils.mkdir_p(www_root)
+FileUtils.mkdir_p(config.www_root)
 
 Thread.new do
   log = WEBrick::Log.new(STDOUT, WEBrick::Log::DEBUG)
   server = WEBrick::HTTPServer.new :Port => config.port,
-                                   :DocumentRoot => www_root,
+                                   :DocumentRoot => config.www_root,
                                    :Logger => log
   server.start
 end
@@ -101,4 +100,4 @@ config.config[:account] = client.account
 config.write
 
 # Make clean
-FileUtils.rm_rf www_root
+FileUtils.rm_rf config.www_root
