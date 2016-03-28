@@ -26,6 +26,10 @@ OptionParser.new do |opts|
     config.port = port if !port.nil?
   end
 
+  opts.on("-a", "--add Domain", String, "Add domain to config, generate key and try to obtain certificate.") do |d|
+    config.add(domain: d)
+  end
+
   opts.on_tail("-h", "--help", "Show this message") do
     puts opts
     exit
@@ -33,7 +37,7 @@ OptionParser.new do |opts|
 end.parse!
 
 # Webrick conf
-www_root = File.join(config.path, 'public')
+www_root = config.www_root
 FileUtils.mkdir_p(www_root)
 
 Thread.new do
@@ -59,25 +63,13 @@ config.domains.each do |params|
   end
 
   logger.info "Starting #{domain.host} tasks"
-
-  authorization = client.authorize(domain: domain.host)
-  #The http-01 method will require you to respond to a HTTP request.
-  challenge = authorization.http01
-
-  # Save the file. We'll create a public directory to serve it from, and inside it we'll create the challenge file.
-  FileUtils.mkdir_p(File.join(www_root, File.dirname(challenge.filename)))
-
-  # We'll write the content of the file
-  File.write(File.join(www_root, challenge.filename), challenge.file_content)
-
-  # try to verify
-  challenge.request_verification
+  domain.validate(client: client)
 
   tries = config.tries
   tries.times do |n|
     begin
       # verified?
-      status = challenge.verify_status
+      status = domain.verify_status
       if status == 'valid'
         logger.info "Verified #{domain.host} challenge. Obtaining certificate."
         certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)

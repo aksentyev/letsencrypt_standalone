@@ -24,6 +24,25 @@ module LetsencryptStandalone
       @host_dir ||= File.join(output_dir, host)
     end
 
+    def validate(client:)
+      authorization = client.authorize(domain: self.host)
+      #The http-01 method will require you to respond to a HTTP request.
+      @challenge = authorization.http01
+
+      # Save the file. We'll create a public directory to serve it from, and inside it we'll create the challenge file.
+      FileUtils.mkdir_p(File.join(config.www_root, File.dirname(@challenge.filename)))
+
+      # We'll write the content of the file
+      File.write(File.join(config.www_root, @challenge.filename), @challenge.file_content)
+
+      # try to verify
+      @challenge.request_verification
+    end
+
+    def verify_status
+      @challenge.verify_status
+    end
+
     private
 
     def load_private_key
@@ -34,6 +53,10 @@ module LetsencryptStandalone
         @private_key = generate_key
         save_private_key
       end
+    end
+
+    def config
+      @config ||= LetsencryptStandalone::Config.new
     end
 
     def create_host_dir

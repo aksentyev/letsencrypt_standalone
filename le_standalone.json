@@ -3,7 +3,13 @@
   "email": "admin@example.com",
   "domains": [
     {
-      "host": "example.com"
+      "host": "example.com",
+      "private_key": "private_key.pem"
+    },
+    {
+      "host": "www.example.com",
+      "private_key": "private_key.pem"
     }
-  ]
+  ],
+  "account": "account.pem"
 }

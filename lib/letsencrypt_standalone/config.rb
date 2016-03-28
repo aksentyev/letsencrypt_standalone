@@ -22,8 +22,16 @@ module LetsencryptStandalone
       config[:ssl_subdir] || 'ssl_certs'
     end
 
+    def www_root
+      config[:www_root] || 'public'
+    end
+
     def tries
       config.fetch(:tries, 5)
+    end
+
+    def add(domain:)
+      @config[:domains] << {host: domain}
     end
 
     def push_certs_locations(files:, domain:)
