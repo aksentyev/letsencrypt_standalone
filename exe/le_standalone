@@ -7,18 +7,15 @@ require 'webrick'
 require 'logger'
 require 'letsencrypt_standalone'
 
-# Logger
-logger = Logger.new(STDOUT)
-logger.level = Logger::INFO
-
 # Config
 config      = LetsencryptStandalone::Config.new
 config.port = 12080
+logfile = STDOUT
 
 OptionParser.new do |opts|
   opts.banner = "le_standalone [options]"
 
-  opts.on("-c", "--config", String, "Path to config file. Default: ./le_standalone.json") do |item|
+  opts.on("-c", "--config File", String, "Path to config file. Default: ./le_standalone.json") do |item|
     config_file = item
   end
 
@@ -28,6 +25,11 @@ OptionParser.new do |opts|
 
   opts.on("-a", "--add Domains", Array, "Add domain(s) to config, generate key and try to obtain certificate.") do |list|
     config.add(domains: list)
+  end
+
+  opts.on("-l", "--log File", String, "Log file") do |file|
+    # Overwrite default logger with the new one of specified
+    logfile = file if file
   end
 
   opts.on_tail("--version", "Show version") do
@@ -41,11 +43,15 @@ OptionParser.new do |opts|
   end
 end.parse!
 
+# Logger
+logger = Logger.new(logfile)
+logger.level = Logger::INFO
+
 # Webrick conf
 FileUtils.mkdir_p(config.www_root)
 
 Thread.new do
-  log = WEBrick::Log.new(STDOUT, WEBrick::Log::DEBUG)
+  log = WEBrick::Log.new(logfile, WEBrick::Log::DEBUG)
   server = WEBrick::HTTPServer.new :Port => config.port,
                                    :DocumentRoot => config.www_root,
                                    :Logger => log
