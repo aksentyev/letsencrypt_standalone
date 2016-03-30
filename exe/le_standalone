@@ -30,6 +30,11 @@ OptionParser.new do |opts|
     config.add(domains: list)
   end
 
+  opts.on_tail("--version", "Show version") do
+    puts LetsencryptStandalone::VERSION
+    exit
+  end
+
   opts.on_tail("-h", "--help", "Show this message") do
     puts opts
     exit
