@@ -26,8 +26,8 @@ OptionParser.new do |opts|
     config.port = port if !port.nil?
   end
 
-  opts.on("-a", "--add Domain", String, "Add domain to config, generate key and try to obtain certificate.") do |d|
-    config.add(domain: d)
+  opts.on("-a", "--add Domains", Array, "Add domain(s) to config, generate key and try to obtain certificate.") do |list|
+    config.add(domains: list)
   end
 
   opts.on_tail("-h", "--help", "Show this message") do

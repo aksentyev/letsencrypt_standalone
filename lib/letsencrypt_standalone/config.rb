@@ -30,8 +30,10 @@ module LetsencryptStandalone
       config.fetch(:tries, 5)
     end
 
-    def add(domain:)
-      @config[:domains] << {host: domain}
+    def add(domains:)
+      domains.each do |domain|
+        @config[:domains] << {host: domain}
+      end
     end
 
     def push_certs_locations(files:, domain:)
