@@ -3,9 +3,13 @@ require 'letsencrypt_standalone'
 module LetsencryptStandalone
   require 'logger'
   class Base
-    # Logger
-    @@logger = Logger.new(STDOUT)
-    @@logger.level = Logger::INFO
+    class << self
+      def logger(log_destination: STDOUT)
+        @@logger = Logger.new(log_destination)
+        @@logger.level = Logger::INFO
+        @@logger
+      end
+    end
 
     def logger
       @@logger

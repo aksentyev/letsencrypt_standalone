@@ -7,10 +7,8 @@ require 'webrick'
 require 'logger'
 require 'letsencrypt_standalone'
 
-# Config
-config      = LetsencryptStandalone::Config.new
-config.port = 12080
-logfile = STDOUT
+# Default logger
+logger = LetsencryptStandalone::Base.logger
 
 OptionParser.new do |opts|
   opts.banner = "le_standalone [options]"
@@ -29,7 +27,7 @@ OptionParser.new do |opts|
 
   opts.on("-l", "--log File", String, "Log file") do |file|
     # Overwrite default logger with the new one of specified
-    logfile = file if file
+    logger = LetsencryptStandalone::Base.logger(log_destination: file) if file
   end
 
   opts.on_tail("--version", "Show version") do
@@ -43,72 +41,78 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-# Logger
-logger = Logger.new(logfile)
-logger.level = Logger::INFO
+begin
 
-# Webrick conf
-FileUtils.mkdir_p(config.www_root)
+  # Config
+  config      = LetsencryptStandalone::Config.new
+  config.port = 12080
 
-Thread.new do
-  log = WEBrick::Log.new(logfile, WEBrick::Log::DEBUG)
-  server = WEBrick::HTTPServer.new :Port => config.port,
-                                   :DocumentRoot => config.www_root,
-                                   :Logger => log
-  server.start
-end
+  # Webrick conf
+  FileUtils.mkdir_p(config.www_root)
 
-# Account
-client = LetsencryptStandalone::Client.new  account: config.account,
-                                            email: config.email
-
-# Let's encrypt!
-config.domains.each do |params|
-  domain = LetsencryptStandalone::Domain.new(params: params)
-  config.push_private_key_name(domain: domain)
-
-  if domain.certificates
-    certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
-    next if !certificate.needs_refresh?
+  Thread.new do
+    log = WEBrick::Log.new(logger, WEBrick::Log::DEBUG)
+    server = WEBrick::HTTPServer.new :Port => config.port,
+                                     :DocumentRoot => config.www_root,
+                                     :Logger => log
+    server.start
   end
 
-  logger.info "Starting #{domain.host} tasks"
-  domain.validate(client: client)
+  # Account
+  client = LetsencryptStandalone::Client.new  account: config.account,
+                                              email: config.email
 
-  tries = config.tries
-  tries.times do |n|
-    begin
-      # verified?
-      status = domain.verify_status
-      if status == 'valid'
-        logger.info "Verified #{domain.host} challenge. Obtaining certificate."
-        certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
-                          .obtain_new
+  # Let's encrypt!
+  config.domains.each do |params|
+    domain = LetsencryptStandalone::Domain.new(params: params)
+    config.push_private_key_name(domain: domain)
 
-        certificate.save
-        break
-      else
-        logger.info "Could not verify #{domain.host} challenge. Status #{status}"
-        logger.warn "FAIL: Certificate for #{domain.host} has not been obtained during #{tries} tries." if n == tries
-      end
-      sleep 1
-    rescue Acme::Client::Error::Malformed
-      next
+    if domain.certificates
+      certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
+      next if !certificate.needs_refresh?
     end
+
+    logger.info "Starting #{domain.host} tasks"
+    domain.validate(client: client)
+
+    tries = config.tries
+    tries.times do |n|
+      begin
+        # verified?
+        status = domain.verify_status
+        if status == 'valid'
+          logger.info "Verified #{domain.host} challenge. Obtaining certificate."
+          certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
+                            .obtain_new
+
+          certificate.save
+          break
+        else
+          logger.info "Could not verify #{domain.host} challenge. Status #{status}"
+          logger.warn "FAIL: Certificate for #{domain.host} has not been obtained during #{tries} tries." if n == tries
+        end
+        sleep 1
+      rescue Acme::Client::Error::Malformed
+        next
+      end
+    end
+
+    # write cert path to config
+    if certificate
+      config.push_certs_locations(files: certificate.files, domain: domain)
+      logger.info "SUCCESS: Certificate for #{domain.host} was obtained"
+    end
+
+    logger.info "Finished #{domain.host} tasks"
   end
 
-  # write cert path to config
-  if certificate
-    config.push_certs_locations(files: certificate.files, domain: domain)
-    logger.info "SUCCESS: Certificate for #{domain.host} was obtained"
-  end
+  # Refresh configuration for future use
+  config.config[:account] = client.account
+  config.write
 
-  logger.info "Finished #{domain.host} tasks"
+  # Make clean
+  FileUtils.rm_rf config.www_root
+
+rescue Exception => err
+  logger.fatal err
 end
-
-# Refresh configuration for future use
-config.config[:account] = client.account
-config.write
-
-# Make clean
-FileUtils.rm_rf config.www_root
