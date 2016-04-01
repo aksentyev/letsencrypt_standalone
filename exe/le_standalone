@@ -10,6 +10,9 @@ require 'letsencrypt_standalone'
 # Default logger
 logger = LetsencryptStandalone::Base.logger
 
+# Default config
+config_file = 'le_standalone.json'
+
 OptionParser.new do |opts|
   opts.banner = "le_standalone [options]"
 
@@ -44,7 +47,7 @@ end.parse!
 begin
 
   # Config
-  config      = LetsencryptStandalone::Config.new
+  config      = LetsencryptStandalone::Config.new(config_file: config_file)
   config.port = 12080
 
   # Webrick conf

@@ -4,7 +4,7 @@ module LetsencryptStandalone
   class Config < Base
     attr_accessor :config, :location, :port
     def initialize(config_file: nil)
-      @location ||= 'le_standalone.json'
+      @location ||= config_file
       @config = JSON.parse(File.read(@location), :symbolize_names => true)
     end
 
