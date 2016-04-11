@@ -12,6 +12,7 @@ logger = LetsencryptStandalone::Base.logger
 
 # Default config
 config_file = 'le_standalone.json'
+options = {}
 
 OptionParser.new do |opts|
   opts.banner = "le_standalone [options]"
@@ -21,11 +22,11 @@ OptionParser.new do |opts|
   end
 
   opts.on("-p", "--port N", Integer, "Port. Default: 12080") do |port|
-    config.port = port if !port.nil?
+    options[:port] = port
   end
 
   opts.on("-a", "--add Domains", Array, "Add domain(s) to config, generate key and try to obtain certificate.") do |list|
-    config.add(domains: list)
+    options[:domains] = list
   end
 
   opts.on("-l", "--log File", String, "Log file") do |file|
@@ -48,7 +49,8 @@ begin
 
   # Config
   config      = LetsencryptStandalone::Config.new(config_file: config_file)
-  config.port = 12080
+  config.port = options[:port].nil? ? 12080 : options[:port]
+  config.add(domains: options[:domains]) if options[:domains]
 
   # Webrick conf
   FileUtils.mkdir_p(config.www_root)
