@@ -2,10 +2,11 @@ require 'letsencrypt_standalone'
 
 module LetsencryptStandalone
   class Config < Base
+    @@config = nil
     attr_accessor :config, :location, :port
     def initialize(config_file: nil)
       @location ||= config_file
-      @config = JSON.parse(File.read(@location), :symbolize_names => true)
+      @@config ||= JSON.parse(File.read(@location), :symbolize_names => true)
     end
 
     def output_dir
@@ -16,6 +17,10 @@ module LetsencryptStandalone
       define_method meth do
         config.fetch(meth, nil)
       end
+    end
+
+    def config
+      @@config
     end
 
     def ssl_subdir
@@ -32,7 +37,7 @@ module LetsencryptStandalone
 
     def add(domains:)
       domains.each do |domain|
-        @config[:domains] << {host: domain}
+        @@config[:domains] << {host: domain}
       end
     end
 
@@ -50,6 +55,16 @@ module LetsencryptStandalone
 
     def write
       File.new(location, 'w').write(JSON.pretty_generate(config))
+    end
+
+    class << self
+      def config
+        @@config
+      end
+
+      def ssl_subdir
+        @@config[:ssl_subdir] || 'ssl_certs'
+      end
     end
   end
 end

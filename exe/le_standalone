@@ -11,14 +11,14 @@ require 'letsencrypt_standalone'
 logger = LetsencryptStandalone::Base.logger
 
 # Default config
-config_file = 'le_standalone.json'
 options = {}
+options[:config_file] = 'le_standalone.json'
 
 OptionParser.new do |opts|
   opts.banner = "le_standalone [options]"
 
   opts.on("-c", "--config File", String, "Path to config file. Default: ./le_standalone.json") do |item|
-    config_file = item
+    options[:config_file] = item
   end
 
   opts.on("-p", "--port N", Integer, "Port. Default: 12080") do |port|
@@ -48,10 +48,10 @@ end.parse!
 begin
 
   # Config
-  config      = LetsencryptStandalone::Config.new(config_file: config_file)
+  config      = LetsencryptStandalone::Config.new(config_file: options[:config_file])
   config.port = options[:port].nil? ? 12080 : options[:port]
   config.add(domains: options[:domains]) if options[:domains]
-
+p options
   # Webrick conf
   FileUtils.mkdir_p(config.www_root)
 

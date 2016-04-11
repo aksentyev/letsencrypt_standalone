@@ -24,11 +24,11 @@ module LetsencryptStandalone
     end
 
     def ssl_subdir
-      @ssl_subdir ||= LetsencryptStandalone::Config.new.ssl_subdir
+      @ssl_subdir ||= LetsencryptStandalone::Config.ssl_subdir
     end
 
     def path
-      @path ||= LetsencryptStandalone::Config.new.config[:path]
+      @path ||= LetsencryptStandalone::Config.config[:path]
     end
   end
 end
