@@ -51,7 +51,7 @@ begin
   config      = LetsencryptStandalone::Config.new(config_file: options[:config_file])
   config.port = options[:port].nil? ? 12080 : options[:port]
   config.add(domains: options[:domains]) if options[:domains]
-p options
+  options
   # Webrick conf
   FileUtils.mkdir_p(config.www_root)
 
@@ -81,7 +81,7 @@ p options
     domain.validate(client: client)
 
     tries = config.tries
-    tries.times do |n|
+    (1..tries).each do |n|
       begin
         # verified?
         status = domain.verify_status
