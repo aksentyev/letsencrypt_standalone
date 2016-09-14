@@ -15,10 +15,11 @@ module LetsencryptStandalone
     attr_reader :files
 
     def initialize(domain:, client:)
-      @files       = domain.certificates || @@default_names
-      @domain      = domain.host
-      @client      = client
-      @private_key = domain.private_key
+      @certificate  = domain.certificates[:certificate]
+	  @files        = domain.files || @@default_names
+      @domain       = domain.host
+      @client       = client
+      @private_key  = domain.private_key
     end
 
     def obtain_new
@@ -28,8 +29,7 @@ module LetsencryptStandalone
     end
 
     def needs_refresh?
-      cert = @files[:certificate]
-      if cert.not_after > Time.now + 2*24*3600
+      if @certificate.not_after > Time.now + 2*24*3600
         logger.info("It doesnt need to refresh cert for domain: #{@domain}")
         false
       else

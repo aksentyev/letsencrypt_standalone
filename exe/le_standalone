@@ -87,7 +87,7 @@ begin
         status = domain.verify_status
         if status == 'valid'
           logger.info "Verified #{domain.host} challenge. Obtaining certificate."
-          certificate ||= LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
+          certificate = LetsencryptStandalone::Certificate.new(client: client.acme_client, domain: domain)
                             .obtain_new
 
           certificate.save

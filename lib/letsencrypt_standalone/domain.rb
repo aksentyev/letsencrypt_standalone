@@ -4,7 +4,7 @@ require 'fileutils'
 
 module LetsencryptStandalone
   class Domain < Base
-    attr_accessor :host, :private_key, :certificates
+    attr_accessor :host, :private_key, :certificates, :files
     attr_reader :private_key_name, :private_key_path
 
     @@default_private_key_name = 'private_key.pem'
@@ -13,9 +13,9 @@ module LetsencryptStandalone
       @host = params.fetch(:host)
       @private_key_name = params.fetch(:private_key, @@default_private_key_name)
       @private_key_path = File.join(output_dir,@host, @private_key_name)
-
+	  @files = params[:certificates]
       if params.has_key? :certificates
-        load_certs(params)
+        load_certs
       end
       load_private_key
     end
@@ -68,9 +68,9 @@ module LetsencryptStandalone
       File.new(@private_key_path, 'w').write(@private_key.to_pem)
     end
 
-    def load_certs(params)
+    def load_certs
       @certificates = {}
-      params[:certificates].each do |type, file|
+      files.each do |type, file|
         cert = OpenSSL::X509::Certificate.new(File.read(File.join(host_dir, file)))
         @certificates[type] = cert
         logger.info "Trying to use existing cert #{type} for #{@host}"
