@@ -15,7 +15,7 @@ module LetsencryptStandalone
     attr_reader :files
 
     def initialize(domain:, client:)
-      @certificate  = domain.certificates[:certificate]
+      @certificate  = domain.certificates[:certificate] unless domain.certificates.nil?
 	  @files        = domain.files || @@default_names
       @domain       = domain.host
       @client       = client
