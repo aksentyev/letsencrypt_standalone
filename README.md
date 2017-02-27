@@ -20,6 +20,10 @@ config file like this:
 
 ```
 
+Run
+
+`le_standalone -h`
+
 choose acme backend
 
 ```
