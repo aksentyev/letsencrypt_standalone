@@ -29,9 +29,10 @@ Full config example:
   "domains": [
     {
       "host": "api.partnerchat.ru", // fqdn 
-      "private_key": "private_key.pem", // private key, will be generated automatically if the field does not exist
-      // certificates files. if exists fullchain.pem will be used to check expiration date.
-      // New certificates will be automatically obtained when expiration date comes in 2 two days
+      // private key, will be generated automatically if the field does not exist
+      "private_key": "private_key.pem",
+      // Certificates files. if exists fullchain.pem will be used to check expiration date.
+      // New certificates will be automatically obtained when expiration date comes in 2 two days 
       "certificates": { 
         "certificate": "cert.pem",
         "chain": "chain.pem",
