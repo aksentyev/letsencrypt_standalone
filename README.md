@@ -28,7 +28,7 @@ Full config example:
   "email": "admin@example.com", //let's encrypt account email
   "domains": [
     {
-      "host": "api.partnerchat.ru", // fqdn 
+      "host": "example.com", // fqdn 
       // private key, will be generated automatically if the field does not exist
       "private_key": "private_key.pem",
       // Certificates files. if exists fullchain.pem will be used to check expiration date.
@@ -52,3 +52,7 @@ choose acme backend
 ```
 LE_ENVIRONMENT=staging // if the variable doesn't exist will be used production backend
 ```
+
+Certificate auto update 
+
+Just run `le_standalone -c CONFIG_FILE_PATH`. If certificate are going to expire soon, the new one will be obtained automatically
