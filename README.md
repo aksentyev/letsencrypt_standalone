@@ -55,4 +55,4 @@ LE_ENVIRONMENT=staging // if the variable doesn't exist will be used production 
 
 Certificate auto update 
 
-Just run `le_standalone -c CONFIG_FILE_PATH`. If certificate are going to expire soon, the new one will be obtained automatically
+Just run `le_standalone -c CONFIG_FILE_PATH`. If certificates are going to expire soon, the new ones will be obtained automatically.
